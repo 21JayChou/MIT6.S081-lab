@@ -1,0 +1,11 @@
+
+xv6 kernel is booting
+
+hart 2 starting
+hart 1 starting
+init: starting sh
+$ sysinfotest
+sysinfotest: start
+3 sysinfotest: unknown sys call 23
+FAIL: sysinfo failed
+$ qemu-system-riscv64: terminating on signal 15 from pid 10203 (make)
