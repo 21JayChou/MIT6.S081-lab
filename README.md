@@ -1,4 +1,4 @@
-## Lab 5 : traps
+### Lab 5 : traps
 
 1. ### RISC-V assembly
 
