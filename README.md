@@ -1,4 +1,4 @@
-# Lab 1 system calls
+# Lab 2 system calls
 
 1. ###  system call tracing
 
