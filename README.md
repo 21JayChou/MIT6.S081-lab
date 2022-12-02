@@ -1,5 +1,123 @@
 # Lab 4 ：Multithreading
 
+1. ### Uthread: switching between threads
+
+   本实验要求为用户级线程系统设计上下文切换机制，然后实现。
+
+   #### 代码实现：
+
+   首先为了能够保存上下文，需要在thread结构里加入一个context字段：
+
+   ```c
+   struct thread {
+     char       stack[STACK_SIZE]; /* the thread's stack */
+     int        state;             /* FREE, RUNNING, RUNNABLE */
+     struct context context;
+   };
+   ```
+
+   然后在创建线程时，为了后续线程切换后，切换的线程能够执行在它被创建时传入thread_create的函数，需要将函数地址存储在context的ra中，同时需要将线程的栈的栈顶地址放在sp中，因此thread_create实现如下：
+
+   ```c
+   void 
+   thread_create(void (*func)())
+   {
+     struct thread *t;
+   
+     for (t = all_thread; t < all_thread + MAX_THREAD; t++) {
+       if (t->state == FREE) break;
+     }
+     t->state = RUNNABLE;
+     // YOUR CODE HERE
+     t->context.ra=(uint64)func;
+     t->context.sp=(uint64)t->stack+STACK_SIZE;
+   }
+   ```
+
+   在实现thread_schedule之前，需要实现thread_switch，它保存当前进程的上下文并且切换到下一个进程的上下文。根据内核中swtch.s的代码,thread_switch代码实现如下：
+
+   ```assembly
+   thread_switch:
+   	/* YOUR CODE HERE */
+   	    sd ra, 0(a0)
+           sd sp, 8(a0)
+           sd s0, 16(a0)
+           sd s1, 24(a0)
+           sd s2, 32(a0)
+           sd s3, 40(a0)
+           sd s4, 48(a0)
+           sd s5, 56(a0)
+           sd s6, 64(a0)
+           sd s7, 72(a0)
+           sd s8, 80(a0)
+           sd s9, 88(a0)
+           sd s10, 96(a0)
+           sd s11, 104(a0)
+   
+           ld ra, 0(a1)
+           ld sp, 8(a1)
+           ld s0, 16(a1)
+           ld s1, 24(a1)
+           ld s2, 32(a1)
+           ld s3, 40(a1)
+           ld s4, 48(a1)
+           ld s5, 56(a1)
+           ld s6, 64(a1)
+           ld s7, 72(a1)
+           ld s8, 80(a1)
+           ld s9, 88(a1)
+           ld s10, 96(a1)
+           ld s11, 104(a1)
+   
+   	ret    /* return to ra */
+   
+   ```
+
+   随后在thread_schedule中只需添加对thread_switch的调用：
+
+   ```c
+   void 
+   thread_schedule(void)
+   {
+     struct thread *t, *next_thread;
+   
+     /* Find another runnable thread. */
+     next_thread = 0;
+     t = current_thread + 1;
+     for(int i = 0; i < MAX_THREAD; i++){
+       if(t >= all_thread + MAX_THREAD)
+         t = all_thread;
+       if(t->state == RUNNABLE) {
+         next_thread = t;
+         break;
+       }
+       t = t + 1;
+     }
+   
+     if (next_thread == 0) {
+       printf("thread_schedule: no runnable threads\n");
+       exit(-1);
+     }
+   
+     if (current_thread != next_thread) {         /* switch threads?  */
+       next_thread->state = RUNNING;
+       t = current_thread;
+       current_thread = next_thread;
+       /* YOUR CODE HERE
+        * Invoke thread_switch to switch from t to next_thread:
+        * thread_switch(??, ??);
+        */
+       thread_switch(&t->context,&current_thread->context);
+     } else
+       next_thread = 0;
+   }
+   
+   ```
+
+   
+
+   
+
 1. ### using threads
 
    该实验要求通过加锁来防止线程之间对一个哈希表的访问冲突。
@@ -97,5 +215,3 @@
    }
    
    ```
-
-   
